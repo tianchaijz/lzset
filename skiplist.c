@@ -44,24 +44,16 @@
 /* commit: 6e15592 */
 
 
-#include "server.h"
-#include "zmalloc.h"
-#include "skiplist.h"
-
 #include <math.h>
 #include <stdlib.h>
-#include <sys/types.h>
 
-#ifdef TEST_MAIN
-#define zmalloc malloc
-#define zfree free
-#include <stdlib.h>
-#endif
+#include "skiplist.h"
+
 
 /* Create a skip list node with the specified number of levels, pointing to
  * the specified object. */
 skiplistNode *skiplistCreateNode(int level, void *obj) {
-    skiplistNode *zn = zmalloc(sizeof(*zn)+level*sizeof(struct skiplistLevel));
+    skiplistNode *zn = malloc(sizeof(*zn)+level*sizeof(struct skiplistLevel));
     zn->obj = obj;
     return zn;
 }
@@ -72,7 +64,7 @@ skiplist *skiplistCreate(int (*compare)(const void *, const void *)) {
     int j;
     skiplist *sl;
 
-    sl = zmalloc(sizeof(*sl));
+    sl = malloc(sizeof(*sl));
     sl->level = 1;
     sl->length = 0;
     sl->header = skiplistCreateNode(SKIPLIST_MAXLEVEL,NULL);
@@ -88,20 +80,20 @@ skiplist *skiplistCreate(int (*compare)(const void *, const void *)) {
 
 /* Free a skiplist node. We don't free the node's pointed object. */
 void skiplistFreeNode(skiplistNode *node) {
-    zfree(node);
+    free(node);
 }
 
 /* Free an entire skiplist. */
 void skiplistFree(skiplist *sl) {
     skiplistNode *node = sl->header->level[0].forward, *next;
 
-    zfree(sl->header);
+    free(sl->header);
     while(node) {
         next = node->level[0].forward;
         skiplistFreeNode(node);
         node = next;
     }
-    zfree(sl);
+    free(sl);
 }
 
 /* Returns a random level for the new skiplist node we are going to create.
@@ -268,51 +260,3 @@ void *skiplistPopTail(skiplist *sl) {
 unsigned long skiplistLength(skiplist *sl) {
     return sl->length;
 }
-
-#ifdef TEST_MAIN
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-int compare(const void *a, const void *b) {
-    return strcmp(a,b);
-}
-
-int main(void) {
-    char *words[] = {
-        "foo", "bar", "zap", "pomo", "pera", "arancio", "limone", NULL
-    };
-    int j;
-
-    skiplist *sl = skiplistCreate(compare);
-    for (j = 0; words[j] != NULL; j++)
-        printf("Insert %s: %p\n",
-            words[j],
-            skiplistInsert(sl,words[j]));
-
-    /* The following should fail. */
-    printf("\nInsert %s again: %p\n\n", words[2], skiplistInsert(sl,words[2]));
-
-    skiplistNode *x;
-    x = sl->header;
-    x = x->level[0].forward;
-    while(x) {
-        printf("%s\n", x->obj);
-        x = x->level[0].forward;
-    }
-
-    printf("Searching for 'hello': %p\n", skiplistFind(sl,"hello"));
-    printf("Searching for 'pera': %p\n", skiplistFind(sl,"pera"));
-
-    printf("Pop from head: %s\n", skiplistPopHead(sl));
-    printf("Pop from head: %s\n", skiplistPopHead(sl));
-
-    printf("Pop from tail: %s\n", skiplistPopTail(sl));
-    printf("Pop from tail: %s\n", skiplistPopTail(sl));
-    printf("Pop from tail: %s\n", skiplistPopTail(sl));
-    printf("Pop from tail: %s\n", skiplistPopTail(sl));
-    printf("Pop from tail: %s\n", skiplistPopTail(sl));
-    printf("Pop from tail: %s\n", skiplistPopTail(sl));
-
-    printf("Pop from head: %s\n", skiplistPopTail(sl));
-}
-#endif
