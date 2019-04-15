@@ -1,0 +1,8 @@
+BasedOnStyle: LLVM
+
+IndentWidth: 4
+SortIncludes: true
+AlignEscapedNewlinesLeft: true
+#AlignConsecutiveAssignments: true
+#AlignConsecutiveDeclarations: false
+#AlwaysBreakTemplateDeclarations: true
