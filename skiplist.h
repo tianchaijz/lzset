@@ -28,6 +28,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+/* http://blog.wjin.org/posts/redis-internal-data-structure-skiplist.html
+ * Redis adds a backward pointer for each skip list node to traverse reversely.
+ * Also there is a span variable in level entry to record how many nodes must be
+ * crossed when reaching to next node. Actually, when traverse list, we can
+ * accumulate span to get the rank of a node in sorted set. */
+
 
 #ifndef __SKIPLIST_H
 #define __SKIPLIST_H
@@ -37,27 +43,42 @@
 
 typedef struct skiplistNode {
     void *obj;
-    struct skiplistNode *backward;
+    double score;
+    struct skiplistNode *backward; // backward pointer, only exist in level zero list
     struct skiplistLevel {
-        struct skiplistNode *forward;
-        unsigned int span;
+        struct skiplistNode *forward; // next node, may skip a lot of nodes
+        unsigned int span; // number of nodes need be crossed to reach to next node
     } level[];
 } skiplistNode;
 
 typedef struct skiplist {
     struct skiplistNode *header, *tail;
     int (*compare)(const void *, const void *);
-    unsigned long length;
-    int level;
+    void (*release)(void *);
+    unsigned long length; // number of nodes
+    int level; // current level
 } skiplist;
 
-skiplist *skiplistCreate(int (*compare)(const void *, const void *));
+typedef void (*skiplistDeleteCb) (void *ctx, void *obj);
+
+skiplist *skiplistCreate(int (*compare)(const void *, const void *), void (*release)(void *));
+void skiplistInit(skiplist *sl, int (*compare)(const void *, const void *), void (*release)(void *));
 void skiplistFree(skiplist *sl);
-skiplistNode *skiplistInsert(skiplist *sl, void *obj);
-int skiplistDelete(skiplist *sl, void *obj);
+void skiplistFreeNodes(skiplist *sl);
+skiplistNode *skiplistInsert(skiplist *sl, double score, void *obj);
+int skiplistDelete(skiplist *sl, double score, void *obj);
+skiplistNode *skiplistUpdateScore(skiplist *sl, double curscore, void *obj, double newscore);
 void *skiplistFind(skiplist *sl, void *obj);
 void *skiplistPopHead(skiplist *sl);
 void *skiplistPopTail(skiplist *sl);
 unsigned long skiplistLength(skiplist *sl);
+unsigned long skiplistDeleteRangeByRank(skiplist *sl, unsigned int start, unsigned int end, skiplistDeleteCb cb, void *ctx);
+unsigned long skiplistGetRank(skiplist *sl, double score, void *obj);
+unsigned long skiplistGetScoreRank(skiplist *sl, double score, int ex);
+skiplistNode* skiplistGetNodeByRank(skiplist *sl, unsigned long rank);
+skiplistNode *skiplistFirstInRange(skiplist *sl, double min, double max, int minex, int maxex);
+skiplistNode *skiplistLastInRange(skiplist *sl, double min, double max, int minex, int maxex);
+void skiplistIterate(skiplist *sl, void *ctx, int (*iterator)(void *ctx, int index, double score, void *obj));
+
 
 #endif
