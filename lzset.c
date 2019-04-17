@@ -6,23 +6,8 @@
 #include "lua.h"
 #include "skiplist.h"
 
-#if LUA_VERSION_NUM == 501
-#define luaL_newlibtable(L, l) \
+#define lzset_lua_newlibtable(L, l) \
     lua_createtable(L, 0, sizeof(l) / sizeof((l)[0]) - 1)
-
-void luaL_setfuncs(lua_State *L, const luaL_Reg *l, int nup) {
-    luaL_checkstack(L, nup + 1, "too many upvalues");
-    for (; l->name != NULL; l++) { /* fill the table with given functions */
-        int i;
-        lua_pushstring(L, l->name);
-        for (i = 0; i < nup; i++) /* copy upvalues to the top */
-            lua_pushvalue(L, -(nup + 1));
-        lua_pushcclosure(L, l->func, nup); /* closure with those upvalues */
-        lua_settable(L, -(nup + 3));
-    }
-    lua_pop(L, nup); /* remove upvalues */
-}
-#endif /* LUA_VERSION_NUM == 501 */
 
 typedef struct lzset_string {
     size_t len;
@@ -434,41 +419,30 @@ static int lzset_release(lua_State *L) {
     return 0;
 }
 
-static luaL_Reg lzset_int_methods[] = {
-    {"insert", lzset_int_insert},
-    {"delete", lzset_int_delete},
-    {"update", lzset_int_update},
-    {"count", lzset_count},
-    {"delete_range_by_rank", lzset_int_delete_range_by_rank},
-
-    {"get_rank", lzset_int_get_rank},
-    {"get_score_rank", lzset_get_score_rank},
-    {"get_range_by_rank", lzset_int_get_range_by_rank},
-    {"get_range_by_score", lzset_int_get_range_by_score},
-
-    {"dump", lzset_int_dump},
-    {NULL, NULL}};
-
-static luaL_Reg lzset_string_methods[] = {
-    {"insert", lzset_string_insert},
-    {"delete", lzset_string_delete},
-    {"update", lzset_string_update},
-    {"count", lzset_count},
-    {"delete_range_by_rank", lzset_string_delete_range_by_rank},
-
-    {"get_rank", lzset_string_get_rank},
-    {"get_score_rank", lzset_get_score_rank},
-    {"get_range_by_rank", lzset_string_get_range_by_rank},
-    {"get_range_by_score", lzset_string_get_range_by_score},
-
-    {"dump", lzset_string_dump},
-    {NULL, NULL}};
-
 int luaopen_lzset_int(lua_State *L) {
+    luaL_Reg libs[] = {{"insert", lzset_int_insert},
+                       {"delete", lzset_int_delete},
+                       {"update", lzset_int_update},
+                       {"count", lzset_count},
+                       {"delete_range_by_rank", lzset_int_delete_range_by_rank},
+
+                       {"get_rank", lzset_int_get_rank},
+                       {"get_score_rank", lzset_get_score_rank},
+                       {"get_range_by_rank", lzset_int_get_range_by_rank},
+                       {"get_range_by_score", lzset_int_get_range_by_score},
+
+                       {"dump", lzset_int_dump},
+                       {NULL, NULL}};
+
     lua_createtable(L, 0, 3);
 
-    luaL_newlibtable(L, lzset_int_methods);
-    luaL_setfuncs(L, lzset_int_methods, 0);
+#if LUA_VERSION_NUM >= 502
+    luaL_newlib(L, libs);
+#else
+    lzset_lua_newlibtable(L, libs);
+    luaL_register(L, NULL, libs);
+#endif
+
     lua_setfield(L, -2, "__index");
 
     lua_pushcfunction(L, lzset_release);
@@ -483,10 +457,30 @@ int luaopen_lzset_int(lua_State *L) {
 }
 
 int luaopen_lzset_string(lua_State *L) {
+    luaL_Reg libs[] = {
+        {"insert", lzset_string_insert},
+        {"delete", lzset_string_delete},
+        {"update", lzset_string_update},
+        {"count", lzset_count},
+        {"delete_range_by_rank", lzset_string_delete_range_by_rank},
+
+        {"get_rank", lzset_string_get_rank},
+        {"get_score_rank", lzset_get_score_rank},
+        {"get_range_by_rank", lzset_string_get_range_by_rank},
+        {"get_range_by_score", lzset_string_get_range_by_score},
+
+        {"dump", lzset_string_dump},
+        {NULL, NULL}};
+
     lua_createtable(L, 0, 3);
 
-    luaL_newlibtable(L, lzset_string_methods);
-    luaL_setfuncs(L, lzset_string_methods, 0);
+#if LUA_VERSION_NUM >= 502
+    luaL_newlib(L, libs);
+#else
+    lzset_lua_newlibtable(L, libs);
+    luaL_register(L, NULL, libs);
+#endif
+
     lua_setfield(L, -2, "__index");
 
     lua_pushcfunction(L, lzset_release);
