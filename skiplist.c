@@ -80,7 +80,7 @@ void skiplistInit(skiplist *sl, int (*compare)(const void *, const void *), void
  * compare elements. The function return value is the same as strcmp(). */
 skiplist *skiplistCreate(int (*compare)(const void *, const void *), void (*release)(void *)) {
     skiplist *sl = malloc(sizeof(*sl));
-    skiplistInit(sl, compare, release);
+    skiplistInit(sl,compare,release);
     return sl;
 }
 
@@ -103,7 +103,7 @@ void skiplistFreeNodes(skiplist *sl) {
     free(sl->header);
     while(node) {
         next = node->level[0].forward;
-        skiplistFreeNode(sl, node);
+        skiplistFreeNode(sl,node);
         node = next;
     }
 }
