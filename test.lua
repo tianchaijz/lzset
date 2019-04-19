@@ -43,7 +43,15 @@ assert(zs:get_rank(total, tostring(total)) == total)
 for i = 1, total do
     local n = math.random(total)
     assert(zs:get_rank(n, tostring(n)) == n)
+    local score, key = zs:at(i)
+    assert(score == i and key == tostring(i))
 end
+
+assert(select(1, zs:at(1)) == 1)
+assert(select(2, zs:at(1)) == "1")
+assert(select(1, zs:at(total)) == total)
+assert(select(2, zs:at(total)) == tostring(total))
+assert(not zs:at(total + 1))
 
 local a1, a2 = 100, 100000
 local t1 = zs:get_range_by_rank(a1, a2)
@@ -79,7 +87,9 @@ for i = 1, total do
     zs:delete(i, tostring(i))
 end
 assert(zs:count(), 0)
-
+assert(not zs:at(0))
+assert(not zs:at(1))
+assert(not zs:at(2))
 
 local function gen_zset(n)
     local zs = zset.new(zset.TYPE_INT)

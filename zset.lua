@@ -157,6 +157,16 @@ function _M.score(self, key)
 end
 
 
+-- return score and key
+function _M.at(self, rank)
+    if rank <= 0 or rank > #self._sl then
+        return
+    end
+
+    return self._sl:at(rank)
+end
+
+
 function _M.reverse_rank(self, rank)
     return #self._sl - rank + 1
 end

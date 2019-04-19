@@ -122,6 +122,35 @@ static int lzset_string_update(lua_State *L) {
     return 0;
 }
 
+static int lzset_int_at(lua_State *L) {
+    skiplist *sl = lua_touserdata(L, 1);
+    unsigned int rank = luaL_checkinteger(L, 2);
+    skiplistNode *node = skiplistGetNodeByRank(sl, rank);
+
+    if (node) {
+        lua_pushnumber(L, node->score);
+        lua_pushinteger(L, *(int *)(node->obj));
+        return 2;
+    }
+
+    return 0;
+}
+
+static int lzset_string_at(lua_State *L) {
+    skiplist *sl = lua_touserdata(L, 1);
+    unsigned int rank = luaL_checkinteger(L, 2);
+    skiplistNode *node = skiplistGetNodeByRank(sl, rank);
+
+    if (node) {
+        lzset_string *s = node->obj;
+        lua_pushnumber(L, node->score);
+        lua_pushlstring(L, s->data, s->len);
+        return 2;
+    }
+
+    return 0;
+}
+
 static void lzset_int_delete_rank_cb(void *ctx, void *obj) {
     lua_State *L = (lua_State *)ctx;
     int *p = obj;
@@ -423,6 +452,7 @@ int luaopen_lzset_int(lua_State *L) {
     luaL_Reg libs[] = {{"insert", lzset_int_insert},
                        {"delete", lzset_int_delete},
                        {"update", lzset_int_update},
+                       {"at", lzset_int_at},
                        {"count", lzset_count},
                        {"delete_range_by_rank", lzset_int_delete_range_by_rank},
 
@@ -461,6 +491,7 @@ int luaopen_lzset_string(lua_State *L) {
         {"insert", lzset_string_insert},
         {"delete", lzset_string_delete},
         {"update", lzset_string_update},
+        {"at", lzset_string_at},
         {"count", lzset_count},
         {"delete_range_by_rank", lzset_string_delete_range_by_rank},
 
