@@ -1,17 +1,17 @@
-local lzset_int = require "lzset.int"
+local lzset_number = require "lzset.number"
 local lzset_string = require "lzset.string"
 
 
 local setmetatable = setmetatable
 
 
-local _M = { TYPE_INT = 0, TYPE_STRING = 1 }
+local _M = { TYPE_NUMBER = 0, TYPE_STRING = 1 }
 local _mt = { __index = _M }
 
 
 function _M.new(typ)
     local zset = {
-        _sl = typ == _M.TYPE_INT and lzset_int() or lzset_string(),
+        _sl = typ == _M.TYPE_NUMBER and lzset_number() or lzset_string(),
         _dict = {},
     }
 

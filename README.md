@@ -9,7 +9,7 @@ The codebase is mainly adapted from [xjdrew/lua-zset](https://github.com/xjdrew/
 
 This implementation has the following particularities:
 
-* Sorted set member type supports both string and integer.
+* Sorted set member type supports both string and Lua number.
 * Supports LuaJIT and Lua 5.x.
 
 

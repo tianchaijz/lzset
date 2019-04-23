@@ -1,6 +1,5 @@
 local cjson = require "cjson.safe"
 local zset = require "zset"
-local zset_int = require "lzset.int"
 local zset_string = require "lzset.string"
 
 
@@ -92,12 +91,23 @@ assert(not zs:at(1))
 assert(not zs:at(2))
 
 local function gen_zset(n)
-    local zs = zset.new(zset.TYPE_INT)
+    local zs = zset.new(zset.TYPE_NUMBER)
     for i = 1, n do
         zs:insert(i, i)
     end
     return zs
 end
+
+
+zs = zset.new(zset.TYPE_NUMBER)
+for i = 1, total do
+    zs:insert(i, math.random(2^53))
+end
+for i = 1, total do
+    local _, key = zs:at(1)
+    zs:delete(key)
+end
+assert(zs:count() == 0)
 
 
 zs = gen_zset(10)

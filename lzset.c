@@ -40,20 +40,20 @@ static int lzset_string_compare(const void *a, const void *b) {
     return cmp ? cmp : s1->len - s2->len;
 }
 
-static int lzset_int_compare(const void *a, const void *b) {
-    const int *n1 = (const int *)a;
-    const int *n2 = (const int *)b;
+static int lzset_number_compare(const void *a, const void *b) {
+    const double *n1 = (const double *)a;
+    const double *n2 = (const double *)b;
 
     return (*n1 < *n2) ? -1 : (*n1 > *n2);
 }
 
-static int lzset_int_insert(lua_State *L) {
+static int lzset_number_insert(lua_State *L) {
     skiplist *sl = lua_touserdata(L, 1);
     double score = luaL_checknumber(L, 2);
-    int n = luaL_checkinteger(L, 3);
+    double d = luaL_checknumber(L, 3);
 
-    int *p = malloc(sizeof(int));
-    *p = n;
+    double *p = malloc(sizeof(double));
+    *p = d;
 
     skiplistInsert(sl, score, p);
 
@@ -74,12 +74,12 @@ static int lzset_string_insert(lua_State *L) {
     return 0;
 }
 
-static int lzset_int_delete(lua_State *L) {
+static int lzset_number_delete(lua_State *L) {
     skiplist *sl = lua_touserdata(L, 1);
     double score = luaL_checknumber(L, 2);
-    int n = luaL_checkinteger(L, 3);
+    double d = luaL_checknumber(L, 3);
 
-    lua_pushboolean(L, skiplistDelete(sl, score, &n));
+    lua_pushboolean(L, skiplistDelete(sl, score, &d));
 
     return 1;
 }
@@ -97,13 +97,13 @@ static int lzset_string_delete(lua_State *L) {
     return 1;
 }
 
-static int lzset_int_update(lua_State *L) {
+static int lzset_number_update(lua_State *L) {
     skiplist *sl = lua_touserdata(L, 1);
     double curscore = luaL_checknumber(L, 2);
-    int n = luaL_checkinteger(L, 3);
+    double d = luaL_checknumber(L, 3);
     double newscore = luaL_checknumber(L, 4);
 
-    skiplistUpdateScore(sl, curscore, &n, newscore);
+    skiplistUpdateScore(sl, curscore, &d, newscore);
 
     return 0;
 }
@@ -122,14 +122,14 @@ static int lzset_string_update(lua_State *L) {
     return 0;
 }
 
-static int lzset_int_at(lua_State *L) {
+static int lzset_number_at(lua_State *L) {
     skiplist *sl = lua_touserdata(L, 1);
     unsigned int rank = luaL_checkinteger(L, 2);
     skiplistNode *node = skiplistGetNodeByRank(sl, rank);
 
     if (node) {
         lua_pushnumber(L, node->score);
-        lua_pushinteger(L, *(int *)(node->obj));
+        lua_pushnumber(L, *(double *)(node->obj));
         return 2;
     }
 
@@ -151,12 +151,12 @@ static int lzset_string_at(lua_State *L) {
     return 0;
 }
 
-static void lzset_int_delete_rank_cb(void *ctx, void *obj) {
+static void lzset_number_delete_rank_cb(void *ctx, void *obj) {
     lua_State *L = (lua_State *)ctx;
-    int *p = obj;
+    double *p = obj;
 
     lua_pushvalue(L, 4);
-    lua_pushinteger(L, *p);
+    lua_pushnumber(L, *p);
 
     lua_call(L, 1, 0);
 }
@@ -171,7 +171,7 @@ static void lzset_string_delete_rank_cb(void *ctx, void *obj) {
     lua_call(L, 1, 0);
 }
 
-static int lzset_int_delete_range_by_rank(lua_State *L) {
+static int lzset_number_delete_range_by_rank(lua_State *L) {
     skiplist *sl = lua_touserdata(L, 1);
     unsigned int start = luaL_checkinteger(L, 2);
     unsigned int end = luaL_checkinteger(L, 3);
@@ -183,8 +183,8 @@ static int lzset_int_delete_range_by_rank(lua_State *L) {
         end = tmp;
     }
 
-    lua_pushinteger(L, skiplistDeleteRangeByRank(sl, start, end,
-                                                 lzset_int_delete_rank_cb, L));
+    lua_pushinteger(L, skiplistDeleteRangeByRank(
+                           sl, start, end, lzset_number_delete_rank_cb, L));
 
     return 1;
 }
@@ -207,12 +207,12 @@ static int lzset_string_delete_range_by_rank(lua_State *L) {
     return 1;
 }
 
-static int lzset_int_get_rank(lua_State *L) {
+static int lzset_number_get_rank(lua_State *L) {
     skiplist *sl = lua_touserdata(L, 1);
     double score = luaL_checknumber(L, 2);
-    int n = luaL_checkinteger(L, 3);
+    double d = luaL_checknumber(L, 3);
 
-    unsigned long rank = skiplistGetRank(sl, score, &n);
+    unsigned long rank = skiplistGetRank(sl, score, &d);
     if (rank == 0) {
         return 0;
     }
@@ -252,7 +252,7 @@ static int lzset_get_score_rank(lua_State *L) {
     return 1;
 }
 
-static int lzset_int_get_range_by_rank(lua_State *L) {
+static int lzset_number_get_range_by_rank(lua_State *L) {
     skiplist *sl = lua_touserdata(L, 1);
 
     unsigned long r1 = luaL_checkinteger(L, 2);
@@ -273,7 +273,7 @@ static int lzset_int_get_range_by_rank(lua_State *L) {
 
     int n = 0;
     while (node && n < span) {
-        lua_pushinteger(L, *(int *)node->obj);
+        lua_pushnumber(L, *(double *)node->obj);
         lua_rawseti(L, -2, ++n);
         node = reverse ? node->backward : node->level[0].forward;
     }
@@ -312,7 +312,7 @@ static int lzset_string_get_range_by_rank(lua_State *L) {
     return 1;
 }
 
-static int lzset_int_get_range_by_score(lua_State *L) {
+static int lzset_number_get_range_by_score(lua_State *L) {
     skiplist *sl = lua_touserdata(L, 1);
     double s1 = luaL_checknumber(L, 2);
     double s2 = luaL_checknumber(L, 3);
@@ -338,7 +338,7 @@ static int lzset_int_get_range_by_score(lua_State *L) {
         } else if (node->score > s2) {
             break;
         }
-        lua_pushinteger(L, *(int *)node->obj);
+        lua_pushnumber(L, *(double *)node->obj);
         lua_rawseti(L, -2, ++n);
         node = reverse ? node->backward : node->level[0].forward;
     }
@@ -382,8 +382,9 @@ static int lzset_string_get_range_by_score(lua_State *L) {
     return 1;
 }
 
-static int lzset_int_print_node(void *ctx, int index, double score, void *obj) {
-    printf("(%d, %f, %d)\n", index, score, *(int *)obj);
+static int lzset_number_print_node(void *ctx, int index, double score,
+                                   void *obj) {
+    printf("(%d, %f, %f)\n", index, score, *(double *)obj);
 
     return 1;
 }
@@ -395,10 +396,10 @@ static int lzset_string_print_node(void *ctx, int index, double score,
     return 1;
 }
 
-static int lzset_int_dump(lua_State *L) {
+static int lzset_number_dump(lua_State *L) {
     skiplist *sl = lua_touserdata(L, 1);
 
-    skiplistIterate(sl, NULL, lzset_int_print_node);
+    skiplistIterate(sl, NULL, lzset_number_print_node);
 
     return 0;
 }
@@ -411,10 +412,10 @@ static int lzset_string_dump(lua_State *L) {
     return 0;
 }
 
-static int lzset_int_new(lua_State *L) {
+static int lzset_number_new(lua_State *L) {
     skiplist *sl = lua_newuserdata(L, sizeof(skiplist));
 
-    skiplistInit(sl, lzset_int_compare, free);
+    skiplistInit(sl, lzset_number_compare, free);
 
     lua_pushvalue(L, lua_upvalueindex(1));
     lua_setmetatable(L, -2);
@@ -448,21 +449,22 @@ static int lzset_release(lua_State *L) {
     return 0;
 }
 
-int luaopen_lzset_int(lua_State *L) {
-    luaL_Reg libs[] = {{"insert", lzset_int_insert},
-                       {"delete", lzset_int_delete},
-                       {"update", lzset_int_update},
-                       {"at", lzset_int_at},
-                       {"count", lzset_count},
-                       {"delete_range_by_rank", lzset_int_delete_range_by_rank},
+int luaopen_lzset_number(lua_State *L) {
+    luaL_Reg libs[] = {
+        {"insert", lzset_number_insert},
+        {"delete", lzset_number_delete},
+        {"update", lzset_number_update},
+        {"at", lzset_number_at},
+        {"count", lzset_count},
+        {"delete_range_by_rank", lzset_number_delete_range_by_rank},
 
-                       {"get_rank", lzset_int_get_rank},
-                       {"get_score_rank", lzset_get_score_rank},
-                       {"get_range_by_rank", lzset_int_get_range_by_rank},
-                       {"get_range_by_score", lzset_int_get_range_by_score},
+        {"get_rank", lzset_number_get_rank},
+        {"get_score_rank", lzset_get_score_rank},
+        {"get_range_by_rank", lzset_number_get_range_by_rank},
+        {"get_range_by_score", lzset_number_get_range_by_score},
 
-                       {"dump", lzset_int_dump},
-                       {NULL, NULL}};
+        {"dump", lzset_number_dump},
+        {NULL, NULL}};
 
     lua_createtable(L, 0, 3);
 
@@ -481,7 +483,7 @@ int luaopen_lzset_int(lua_State *L) {
     lua_pushcfunction(L, lzset_count);
     lua_setfield(L, -2, "__len");
 
-    lua_pushcclosure(L, lzset_int_new, 1);
+    lua_pushcclosure(L, lzset_number_new, 1);
 
     return 1;
 }
