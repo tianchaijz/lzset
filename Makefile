@@ -1,6 +1,6 @@
 # Include path where lua.h, luaconf.h and lauxlib.h reside:
-INCLUDES= -I$(PWD) -I/usr/include/lua5.1
-# INCLUDES= -I$(PWD) -I$(HOME)/openresty/lua/src
+LUA_INCLUDE_DIR= /usr/include/lua5.1
+INCLUDES= -I$(PWD) -I$(LUA_INCLUDE_DIR)
 
 # Lua executable name. Used to find the install path and for testing.
 LUA= lua
